@@ -1,0 +1,196 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{F1EFF554-F441-4122-80AA-C4BA4FC2B8CD}</ProjectGuid>
+    <OutputType>WinExe</OutputType>
+    <StartupObject>DTSIMS2.Program</StartupObject>
+    <RootNamespace>DTSIMS2</RootNamespace>
+    <AssemblyName>DTSIMS2-Sandbox</AssemblyName>
+    <FileAlignment>512</FileAlignment>
+    <MyType>Empty</MyType>
+    <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
+    <OptionExplicit>On</OptionExplicit>
+    <OptionCompare>Binary</OptionCompare>
+    <OptionStrict>On</OptionStrict>
+    <OptionInfer>On</OptionInfer>
+    <Deterministic>true</Deterministic>
+    <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
+    <GenerateBindingRedirectsOutputType>true</GenerateBindingRedirectsOutputType>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <DefineDebug>true</DefineDebug>
+    <DefineTrace>true</DefineTrace>
+    <OutputPath>bin\Debug\</OutputPath>
+    <NoWarn>42016,41999,42017,42018,42019,42032,42036,42020,42021,42022</NoWarn>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <DefineTrace>true</DefineTrace>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <NoWarn>42016,41999,42017,42018,42019,42032,42036,42020,42021,42022</NoWarn>
+  </PropertyGroup>
+  <ItemGroup>
+    <Import Include="Microsoft.VisualBasic" />
+    <Import Include="System" />
+  </ItemGroup>
+  <ItemGroup>
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Drawing" />
+    <Reference Include="System.Management" />
+    <Reference Include="System.Security" />
+    <Reference Include="System.Windows.Forms" />
+    <Reference Include="System.Xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Program.vb" />
+    <Compile Include="Modules\AppSession.vb" />
+    <Compile Include="Modules\ModuleCatalog.vb" />
+    <Compile Include="Modules\Permissions.vb" />
+    <Compile Include="Modules\Theme.vb" />
+    <Compile Include="Modules\TextSize.vb" />
+    <Compile Include="Modules\PerfLog.vb" />
+    <Compile Include="Modules\WindowStyle.vb" />
+    <Compile Include="Controls\HomeView.vb">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="Controls\MarqueePanel.vb">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="Controls\MaroonMenuRenderer.vb" />
+    <Compile Include="Controls\TileButton.vb">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="Forms\System\MainMenuForm.vb">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\System\PlaceholderForm.vb">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Modules\AuditLog.vb" />
+    <Compile Include="Modules\AuthService.vb" />
+    <Compile Include="Modules\ConnectionSettings.vb" />
+    <Compile Include="Modules\Db.vb" />
+    <Compile Include="Modules\LiveSync.vb" />
+    <Compile Include="Modules\PasswordHasher.vb" />
+    <Compile Include="Controls\InputField.vb">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="Controls\MaroonButton.vb">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="Forms\System\AuthShellForm.vb">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\System\ConnectionSettingsForm.vb">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\System\LoginForm.vb">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\System\SetupSuperadminForm.vb">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Controls\UiKit.vb">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="Modules\UserData.vb" />
+    <Compile Include="Forms\FileMaintenance\UsersForm.vb">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\FileMaintenance\UserDialogs.vb">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="Modules\SessionTracker.vb" />
+    <Compile Include="Forms\SystemUtilities\UserMonitoringForm.vb">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Modules\FormHelpers.vb" />
+    <Compile Include="Modules\ProductData.vb" />
+    <Compile Include="Modules\SupplierData.vb" />
+    <Compile Include="Forms\FileMaintenance\SuppliersForm.vb">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\FileMaintenance\SupplierDialogs.vb">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\FileMaintenance\ProductsForm.vb">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\FileMaintenance\ProductDialogs.vb">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Modules\InventoryData.vb" />
+    <Compile Include="Modules\DeliveryData.vb" />
+    <Compile Include="Forms\Process\DeliveryDialogs.vb">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="Forms\Process\DeliveryForm.vb">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\Reports\InventoryForm.vb">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\Settings\StockThresholdForm.vb">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Modules\SettingsData.vb" />
+    <Compile Include="Forms\Settings\TextSizeForm.vb">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\Settings\VatForm.vb">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\Settings\DiscountDialogs.vb">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\Settings\DiscountsForm.vb">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Modules\PosData.vb" />
+    <Compile Include="Controls\ReceiptRenderer.vb" />
+    <Compile Include="Controls\PosControls.vb" />
+    <Compile Include="Forms\Process\PosDialogs.vb">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\Process\PosForm.vb">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Controls\Code128.vb" />
+    <Compile Include="Controls\BarcodeLabels.vb">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="Forms\FileMaintenance\BarcodeDialogs.vb">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Modules\CustomerData.vb" />
+    <Compile Include="Modules\SmsService.vb" />
+    <Compile Include="Controls\CardRenderer.vb" />
+    <Compile Include="Forms\Process\CustomerDialogs.vb">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\Process\CustomersForm.vb">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\Process\LoyaltyDialogs.vb" />
+    <Compile Include="Controls\DetailsLayout.vb" />
+    <Compile Include="Modules\ModemParsers.vb" />
+    <Compile Include="Modules\DeviceTools.vb" />
+    <Compile Include="Forms\SystemUtilities\DevicesForm.vb">
+      <SubType>Component</SubType>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="MySql.Data">
+      <Version>9.7.0</Version>
+    </PackageReference>
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.VisualBasic.targets" />
+</Project>
