@@ -128,6 +128,7 @@ Public MustInherit Class ReportFormBase
     Private _doc As ReportDoc
     Private _version As Integer
     Private _loaded As Boolean
+    Private _buttonTop As Integer = Theme.S(20)
 
     Public Sub New()
         Me.AutoScaleDimensions = New SizeF(96.0F, 96.0F)
@@ -197,7 +198,7 @@ Public MustInherit Class ReportFormBase
         For Each b As MaroonButton In New MaroonButton() {_btnPrint, _btnExcel, _btnPdf, _btnShortcut}
             If Not b.Visible Then Continue For
             x -= b.Width
-            b.Location = New Point(x, Theme.S(20))
+            b.Location = New Point(x, _buttonTop)
             x -= Theme.S(10)
         Next
         _subtitle.Width = Math.Max(Theme.S(200), x - _subtitle.Left)
@@ -409,6 +410,15 @@ Public MustInherit Class ReportFormBase
 
         _loaded = True
         LoadAsync(True)
+    End Sub
+
+    ''' <summary>For a report shown inside another screen: no big title, a slimmer top bar (the host has its own).</summary>
+    Public Sub UseCompactHeader()
+        _title.Visible = False
+        _header.Height = Theme.S(64)
+        _subtitle.Location = New Point(Theme.S(35), Theme.S(22))
+        _buttonTop = Theme.S(12)
+        OnHeaderResize(Me, EventArgs.Empty)
     End Sub
 
     Public Sub RefreshData() Implements ILiveForm.RefreshData

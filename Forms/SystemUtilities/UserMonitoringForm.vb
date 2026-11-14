@@ -79,6 +79,11 @@ Public Class UserMonitoringForm
     Private ReadOnly _feed As New DataGridView()
 
     Private ReadOnly _poll As New Timer()
+    Private ReadOnly _modeBar As New Panel()
+    Private ReadOnly _modeTabs As New PillTabs()
+    Private ReadOnly _dutyHost As New Panel()
+    Private _duty As DutyRecordsForm
+    Private _dutyPolls As Integer
     Private ReadOnly _tick As New Timer()
     Private ReadOnly _sinceFetch As New Stopwatch()
 
@@ -96,14 +101,64 @@ Public Class UserMonitoringForm
         BuildStats()
         BuildSessionGrid()
         BuildFeed()
+        BuildModeBar()
 
+        Controls.Add(_dutyHost)
         Controls.Add(_listHost)
         Controls.Add(_feedHost)
         Controls.Add(_stats)
+        Controls.Add(_modeBar)
         Controls.Add(_header)
     End Sub
 
     ' ------------------------------------------------------------------ building the screen
+    ' ------------------------------------------------------------------ Live monitoring | Duty records
+    Private Sub BuildModeBar()
+        _modeBar.Dock = DockStyle.Top
+        _modeBar.Height = Theme.S(56)
+        _modeBar.BackColor = Color.White
+        _modeTabs.Location = New Point(Theme.S(32), Theme.S(8))
+        _modeTabs.SetItems("Live monitoring", "Duty records")
+        _modeBar.Controls.Add(_modeTabs)
+        AddHandler _modeTabs.SelectedIndexChanged, AddressOf OnModeChanged
+
+        _dutyHost.Dock = DockStyle.Fill
+        _dutyHost.BackColor = Color.White
+        _dutyHost.Visible = False
+    End Sub
+
+    Private Sub OnModeChanged(sender As Object, e As EventArgs)
+        Dim duty As Boolean = (_modeTabs.SelectedIndex = 1)
+        _stats.Visible = Not duty
+        _listHost.Visible = Not duty
+        _feedHost.Visible = Not duty
+        _search.Visible = Not duty
+        _dutyHost.Visible = duty
+        _subtitle.Text = If(duty, "Daily time record: how long each person was logged in. Save it as PDF or Excel, or print it.",
+                            "Who is logged in, on which PC, and what they are doing right now")
+
+        If duty Then
+            If _duty Is Nothing Then
+                _duty = New DutyRecordsForm()
+                _duty.TopLevel = False
+                _duty.FormBorderStyle = FormBorderStyle.None
+                _duty.Dock = DockStyle.Fill
+                _duty.UseCompactHeader()
+                _dutyHost.Controls.Add(_duty)
+                _duty.Show()
+            Else
+                _duty.RefreshData()
+            End If
+        Else
+            Try
+                RefreshSessions(True)
+                RefreshFeed(True)
+            Catch
+                ' database offline: the main window already shows it
+            End Try
+        End If
+    End Sub
+
     Private Sub BuildHeader()
         _header.Dock = DockStyle.Top
         _header.Height = Theme.S(100)
@@ -242,6 +297,15 @@ Public Class UserMonitoringForm
 
     Private Sub OnPoll(sender As Object, e As EventArgs)
         Try
+            If _dutyHost.Visible Then
+                ' on the duty records tab: refresh it about every 30 seconds (this timer runs every 2)
+                _dutyPolls += 1
+                If _dutyPolls >= 15 AndAlso _duty IsNot Nothing Then
+                    _dutyPolls = 0
+                    _duty.RefreshData()
+                End If
+                Return
+            End If
             RefreshSessions(False)
             RefreshFeed(False)
         Catch

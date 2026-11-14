@@ -91,3 +91,12 @@ EXPERIMENT 4 - Loss Report (Reports > Loss Report, Admin / Superadmin only)
  something up, View receipt) | Cashiers (who gives what away + who approved special prices) | Below cost (the real loss).
  Code: LossData module at the end of Modules/ReportData.vb, Forms/Reports/LossReportForm.vb.
  Note: the POS never combines points with a discount or special price, so each sale gives up at most one kind.
+
+EXPERIMENT 5 - Duty records (DTR) in User Monitoring, which now lives under the Reports menu
+ - User Monitoring moved from Utilities to Reports (still Superadmin only). Two tabs: Live monitoring (as before) | Duty records.
+ - Duty records (Modules/DutyData.vb, Forms/SystemUtilities/DutyRecordsForm.vb) is a ReportFormBase screen embedded in the monitor:
+   Daily / Weekly / Monthly, Save PDF, Save Excel, Print. Views: Duty records (one row per person per day: time in, time out,
+   total time, hours, sessions, status) | Per person (totals for payroll) | Sessions (every login).
+ - Built from user_sessions: login to logout; still logged in = until now; no logout recorded (app closed, crash, PC off) = last heartbeat.
+   Time is split at midnight, overlapping sessions (two PCs) count once.
+ - ReportFormBase.UseCompactHeader() lets any report sit inside another screen.

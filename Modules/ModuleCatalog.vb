@@ -39,6 +39,7 @@ Public Module ModuleCatalog
         l.Add(New ModuleInfo("delivery_report", "Reports", "Delivery Report", "Deliveries received from suppliers"))
         l.Add(New ModuleInfo("sales_report", "Reports", "Sales Report", "Sales, top products and receipt copies"))
         l.Add(New ModuleInfo("loss_report", "Reports", "Loss Report", "Discounts, special prices and points given"))
+        l.Add(New ModuleInfo("user_monitoring", "Reports", "User Monitoring", "Who is logged in now, and duty records (DTR)", Keys.Alt Or Keys.M))
 
         l.Add(New ModuleInfo("pos", "Transactions", "POS", "Point of sale: ring up customers", Keys.F2))
         l.Add(New ModuleInfo("customers", "Transactions", "Customer Accounts", "Loyalty cards and points"))
@@ -50,7 +51,6 @@ Public Module ModuleCatalog
         l.Add(New ModuleInfo("database_settings", "Settings", "Database Settings", "Backup, restore and backup folder"))
         l.Add(New ModuleInfo("text_size", "Settings", "Text Size", "Make the text bigger or smaller on this computer"))
 
-        l.Add(New ModuleInfo("user_monitoring", "Utilities", "User Monitoring", "Who is logged in, on which PC, and what they are doing", Keys.Alt Or Keys.M))
         l.Add(New ModuleInfo("devices", "Utilities", "Devices", "SMS modem, receipt printer and barcode scanner: check and test", Keys.Alt Or Keys.E))
 
         Return l
