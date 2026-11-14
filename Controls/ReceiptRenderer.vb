@@ -43,6 +43,8 @@ Public Class ReceiptModel
     Public Property PointsEarned As Decimal
     Public Property PointsBalance As Decimal
     Public Property HasPointsBalance As Boolean
+    ''' <summary>True for a copy printed later from the Sales Report: the receipt is stamped so it cannot pass as the original.</summary>
+    Public Property IsReprint As Boolean
 End Class
 
 ''' <summary>
@@ -135,6 +137,10 @@ Public Module ReceiptRenderer
             If m.ShopTin.Length > 0 Then p.Center("TIN: " & m.ShopTin, p.Small)
             p.Rule()
             p.Center("SALES RECEIPT", p.Bold)
+            If m.IsReprint Then
+                p.Center("*** REPRINT / COPY ***", p.Bold)
+                p.Center("Printed " & DateTime.Now.ToString("MMM d, yyyy h:mm tt", CultureInfo.InvariantCulture), p.Small)
+            End If
             p.Gap(2)
             p.Row("No: " & m.ReceiptNo, "", p.Normal)
             p.Row("Date: " & m.SoldAt.ToString("MMM d, yyyy"), m.SoldAt.ToString("h:mm tt"), p.Normal)

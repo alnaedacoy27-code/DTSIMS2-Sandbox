@@ -44,6 +44,8 @@
     <Reference Include="System.Core" />
     <Reference Include="System.Data" />
     <Reference Include="System.Drawing" />
+    <Reference Include="System.IO.Compression" />
+    <Reference Include="System.IO.Compression.FileSystem" />
     <Reference Include="System.Management" />
     <Reference Include="System.Security" />
     <Reference Include="System.Windows.Forms" />
@@ -57,7 +59,14 @@
     <Compile Include="Modules\Theme.vb" />
     <Compile Include="Modules\TextSize.vb" />
     <Compile Include="Modules\PerfLog.vb" />
+    <Compile Include="Modules\ReportModel.vb" />
+    <Compile Include="Modules\ReportCanvas.vb" />
+    <Compile Include="Modules\ReportExport.vb" />
+    <Compile Include="Modules\ReportData.vb" />
     <Compile Include="Modules\WindowStyle.vb" />
+    <Compile Include="Controls\BarChart.vb" />
+    <Compile Include="Controls\PillTabs.vb" />
+    <Compile Include="Controls\DateChip.vb" />
     <Compile Include="Controls\HomeView.vb">
       <SubType>Component</SubType>
     </Compile>
@@ -142,6 +151,21 @@
       <SubType>Form</SubType>
     </Compile>
     <Compile Include="Modules\SettingsData.vb" />
+    <Compile Include="Forms\Reports\ReportFormBase.vb">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\Reports\SalesReportForm.vb">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\Reports\InventoryReportForm.vb">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\Reports\DeliveryReportForm.vb">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\Reports\ReceiptCopyDialog.vb">
+      <SubType>Form</SubType>
+    </Compile>
     <Compile Include="Forms\Settings\TextSizeForm.vb">
       <SubType>Form</SubType>
     </Compile>

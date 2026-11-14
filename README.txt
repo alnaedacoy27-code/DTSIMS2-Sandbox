@@ -57,3 +57,25 @@ EXPERIMENT 2 - speed (slow main window, Customers freeze)
   (at most every 10 min unless forced); HasModem/StatusText never scan; LocalIp reads the adapters;
   localhost connects as 127.0.0.1.
  Timing log: %APPDATA%\DTSIMS2-Sandbox\perf.log (Modules/PerfLog.vb). Delete the PerfLog.Mark lines when done.
+
+EXPERIMENT 3 - reports (Sales, Inventory, Delivery)
+ New screens (Reports menu): Sales Report, Inventory Report, Delivery Report (new tile). Loss Report is left as the placeholder.
+ Every report: Daily / Weekly / Monthly tabs + date arrows + date picker, status figures, charts beside the table,
+ Save PDF, Save Excel (.xlsx), Print (preview, landscape). Data loads on a background thread (no freezing).
+  Sales Report     : Summary (total sales, transactions, items, average, profit, discounts, top 10 products, sales per hour/day,
+                     comparison with the previous period) | Transactions (search, double-click = receipt copy + reprint) | Categories
+                     Cashiers see only their own sales.
+  Inventory Report : Summary (received, sold, lost, adjusted, stock in vs out chart, top 10 moved out) | Movements log
+  Delivery Report  : Summary (deliveries, units, cost, expected profit, cost by supplier, per-day cost) | Deliveries (double-click = items)
+ Receipt copy: Forms/Reports/ReceiptCopyDialog.vb - uses the same renderer as the POS; the printout is stamped
+  "*** REPRINT / COPY ***" (ReceiptModel.IsReprint) and every reprint is written to the audit trail.
+ New files: Modules/ReportModel.vb, ReportCanvas.vb (one layout -> printer or PDF), ReportExport.vb (PDF, xlsx, print),
+  ReportData.vb (all queries); Controls/BarChart.vb, PillTabs.vb; Forms/Reports/ReportFormBase.vb, SalesReportForm.vb,
+  InventoryReportForm.vb, DeliveryReportForm.vb, ReceiptCopyDialog.vb. vbproj: added System.IO.Compression references.
+ Notes: PDF / print / Excel write money as "PHP" (the PDF built-in font has no peso sign). Excel holds the figures and table (no charts).
+
+EXPERIMENT 3b - report printing + date button
+ - Print (reports): asks which printer to use first (the receipt printer is never preselected); only A4 / Letter / Legal paper
+   is accepted - a receipt roll printer is refused with a message. Landscape. Then the print preview; its Print button prints.
+ - Date: arrows and date box replaced by Controls/DateChip.vb (calendar icon + period text, opens a month calendar) and a Today button.
+ - Sales Report > Transactions: "View receipt" (preview) and "Print copy" (one click, receipt printer, stamped REPRINT / COPY, audited).
