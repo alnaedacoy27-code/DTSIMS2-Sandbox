@@ -241,6 +241,7 @@ Public Module ReportData
             doc.TruncatedNote = "Showing the latest " & MaxRows.ToString("N0", Inv) & " sales of this period. Choose a shorter period to see the rest."
         End If
 
+        doc.ScreenHint = "Select a sale, then choose View receipt or Print copy (or double-click it)."
         doc.TableTitle = "All sales (double-click a row to see the receipt)"
         doc.Columns.Add(New ReportColumn("RECEIPT NO", "receipt_no", ColKind.Text, 14, 130))
         doc.Columns.Add(New ReportColumn("DATE & TIME", "created_at", ColKind.Stamp, 17, 170))
@@ -524,7 +525,7 @@ Public Module ReportData
         AddDeliveryKpis(doc, r)
 
         Dim dt As DataTable = Db.Table("SELECT d.id, d.batch_no, sp.company_name AS supplier, d.delivery_date, d.status, " &
-                                       "(SELECT COUNT(*) FROM delivery_items di WHERE di.delivery_id = d.id) AS lines, " &
+                                       "(SELECT COUNT(*) FROM delivery_items di WHERE di.delivery_id = d.id) AS item_count, " &
                                        "(SELECT COALESCE(SUM(di.qty), 0) FROM delivery_items di WHERE di.delivery_id = d.id) AS units, " &
                                        "(SELECT COALESCE(SUM(di.qty_remaining), 0) FROM delivery_items di WHERE di.delivery_id = d.id) AS remaining, " &
                                        "d.total_cost, d.expected_profit " &
@@ -539,12 +540,13 @@ Public Module ReportData
             row("state") = If(Txt(row("status")) = "sent", "Received", "Draft")
         Next
 
+        doc.ScreenHint = "Select a delivery, then choose View items (or double-click it)."
         doc.TableTitle = "All deliveries (double-click a row to see its items)"
         doc.Columns.Add(New ReportColumn("BATCH NO", "batch_no", ColKind.Text, 12, 120))
         doc.Columns.Add(New ReportColumn("SUPPLIER", "supplier", ColKind.Text, 22, 170))
         doc.Columns.Add(New ReportColumn("DELIVERY DATE", "delivery_date", ColKind.DayOnly, 13, 130))
         doc.Columns.Add(New ReportColumn("STATUS", "state", ColKind.Text, 9, 90))
-        doc.Columns.Add(New ReportColumn("ITEMS", "lines", ColKind.Number, 7, 70))
+        doc.Columns.Add(New ReportColumn("ITEMS", "item_count", ColKind.Number, 7, 70))
         doc.Columns.Add(New ReportColumn("UNITS", "units", ColKind.Number, 8, 80))
         doc.Columns.Add(New ReportColumn("STILL LEFT", "remaining", ColKind.Number, 9, 90))
         doc.Columns.Add(New ReportColumn("TOTAL COST", "total_cost", ColKind.Money, 12, 120))

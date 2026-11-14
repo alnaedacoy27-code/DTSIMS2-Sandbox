@@ -26,7 +26,7 @@ Public Class SalesReportForm
 
     Protected Overrides ReadOnly Property ViewNames As String()
         Get
-            Return New String() {"Summary", "Transactions", "Categories"}
+            Return New String() {"Summary", "Receipts", "Categories"}
         End Get
     End Property
 
@@ -52,6 +52,17 @@ Public Class SalesReportForm
                 Return ReportData.SalesSummary(period, range, cid)
         End Select
     End Function
+
+    Protected Overrides ReadOnly Property ShortcutText As String
+        Get
+            Return "Receipt copy"
+        End Get
+    End Property
+
+    ''' <summary>The "Receipt copy" button at the top: jump to the Receipts tab where a sale can be found and reprinted.</summary>
+    Protected Overrides Sub OnShortcut()
+        ShowView(1)
+    End Sub
 
     Protected Overrides Function RowActionText(view As Integer) As String
         Return If(view = 1, "View receipt", "")

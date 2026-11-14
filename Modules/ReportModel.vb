@@ -194,6 +194,8 @@ Public Class ReportDoc
     Public Property Data As DataTable = New DataTable()
     Public Property EmptyText As String = "Nothing to show for this period."
     Public Property TruncatedNote As String = ""
+    ''' <summary>A tip shown under the table on screen only (not in the PDF / printout).</summary>
+    Public Property ScreenHint As String = ""
 
     Public Function FileBaseName() As String
         Dim s As String = Title & " - " & PeriodLabel

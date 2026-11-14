@@ -64,9 +64,15 @@
     <Compile Include="Modules\ReportExport.vb" />
     <Compile Include="Modules\ReportData.vb" />
     <Compile Include="Modules\WindowStyle.vb" />
-    <Compile Include="Controls\BarChart.vb" />
-    <Compile Include="Controls\PillTabs.vb" />
-    <Compile Include="Controls\DateChip.vb" />
+    <Compile Include="Controls\BarChart.vb">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="Controls\PillTabs.vb">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="Controls\DateChip.vb">
+      <SubType>Component</SubType>
+    </Compile>
     <Compile Include="Controls\HomeView.vb">
       <SubType>Component</SubType>
     </Compile>

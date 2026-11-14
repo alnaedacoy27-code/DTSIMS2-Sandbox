@@ -45,6 +45,21 @@ Public MustInherit Class ReportFormBase
         Return False
     End Function
 
+    ''' <summary>Text of an extra button at the top right (e.g. "Receipt copy"). Empty = none.</summary>
+    Protected Overridable ReadOnly Property ShortcutText As String
+        Get
+            Return ""
+        End Get
+    End Property
+
+    Protected Overridable Sub OnShortcut()
+    End Sub
+
+    ''' <summary>Switches to one of the report's views (0 = the first tab).</summary>
+    Protected Sub ShowView(index As Integer)
+        If index >= 0 AndAlso index < ViewNames.Length Then _views.SelectedIndex = index
+    End Sub
+
     ' ---- a card with a thin rounded border (holds one chart)
     Private Class CardPanel
         Inherits Panel
@@ -73,6 +88,7 @@ Public MustInherit Class ReportFormBase
     Private ReadOnly _btnPdf As New MaroonButton()
     Private ReadOnly _btnExcel As New MaroonButton()
     Private ReadOnly _btnPrint As New MaroonButton()
+    Private ReadOnly _btnShortcut As New MaroonButton()
 
     ' ---- period bar
     Private ReadOnly _periodBar As New Panel()
@@ -165,6 +181,10 @@ Public MustInherit Class ReportFormBase
         StyleExport(_btnPdf, "Save PDF", 104)
         StyleExport(_btnExcel, "Save Excel", 112)
         StyleExport(_btnPrint, "Print", 84)
+        _btnShortcut.Size = New Size(Theme.S(150), Theme.S(40))
+        _btnShortcut.Visible = False
+        _header.Controls.Add(_btnShortcut)
+        AddHandler _btnShortcut.Click, AddressOf OnShortcutClick
         AddHandler _btnPdf.Click, AddressOf OnSavePdf
         AddHandler _btnExcel.Click, AddressOf OnSaveExcel
         AddHandler _btnPrint.Click, AddressOf OnPrint
@@ -174,7 +194,8 @@ Public MustInherit Class ReportFormBase
 
     Private Sub OnHeaderResize(sender As Object, e As EventArgs)
         Dim x As Integer = _header.ClientSize.Width - Theme.S(32)
-        For Each b As MaroonButton In New MaroonButton() {_btnPrint, _btnExcel, _btnPdf}
+        For Each b As MaroonButton In New MaroonButton() {_btnPrint, _btnExcel, _btnPdf, _btnShortcut}
+            If Not b.Visible Then Continue For
             x -= b.Width
             b.Location = New Point(x, Theme.S(20))
             x -= Theme.S(10)
@@ -375,6 +396,9 @@ Public MustInherit Class ReportFormBase
         _subtitle.Text = ReportBlurb
         _views.SetItems(ViewNames)
         _views.Visible = ViewNames.Length > 1
+        _btnShortcut.Text = ShortcutText
+        _btnShortcut.Visible = ShortcutText.Length > 0
+        OnHeaderResize(Me, EventArgs.Empty)
         OnBodyResize(Me, EventArgs.Empty)
         UpdateViewControls()
 
@@ -572,6 +596,7 @@ Public MustInherit Class ReportFormBase
             f = If(shown = total, total.ToString("N0") & If(total = 1, " row", " rows"), shown.ToString("N0") & " of " & total.ToString("N0") & " rows")
         End If
         If _doc.TruncatedNote.Length > 0 Then f &= "   |   " & _doc.TruncatedNote
+        If _doc.ScreenHint.Length > 0 AndAlso total > 0 Then f &= "   |   " & _doc.ScreenHint
         _foot.Text = f
     End Sub
 
@@ -589,6 +614,10 @@ Public MustInherit Class ReportFormBase
 
     Private Sub OnActionClick(sender As Object, e As EventArgs)
         RunRowAction()
+    End Sub
+
+    Private Sub OnShortcutClick(sender As Object, e As EventArgs)
+        OnShortcut()
     End Sub
 
     Private Sub OnAction2Click(sender As Object, e As EventArgs)

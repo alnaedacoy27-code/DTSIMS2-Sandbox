@@ -79,3 +79,7 @@ EXPERIMENT 3b - report printing + date button
    is accepted - a receipt roll printer is refused with a message. Landscape. Then the print preview; its Print button prints.
  - Date: arrows and date box replaced by Controls/DateChip.vb (calendar icon + period text, opens a month calendar) and a Today button.
  - Sales Report > Transactions: "View receipt" (preview) and "Print copy" (one click, receipt printer, stamped REPRINT / COPY, audited).
+
+EXPERIMENT 3c - fixes
+ - Delivery Report > Deliveries: SQL alias "lines" is a reserved word in MySQL 8 -> renamed to item_count.
+ - Sales Report: tab renamed "Receipts"; extra header button "Receipt copy" jumps to it; on-screen tip under the table.
