@@ -565,3 +565,339 @@ Public Module ReportData
     End Function
 
 End Module
+
+' =====================================================================================
+'  LOSS REPORT - what the shop gave up: discounts, special prices and points redeemed
+' =====================================================================================
+Public Module LossData
+
+    Private ReadOnly Inv As System.Globalization.CultureInfo = System.Globalization.CultureInfo.InvariantCulture
+    Private ReadOnly PaleBar As Color = Color.FromArgb(205, 165, 165)
+    Private ReadOnly GreyBar As Color = Color.FromArgb(110, 120, 130)
+    Private Const MaxRows As Integer = 3000
+
+    ' a sale "gave something up" when it has a percentage discount, an approved special price, or points
+    Private Const AnyConcession As String = "(s.discount_amount > 0 OR s.special_discount_amount > 0 OR s.points_value > 0)"
+    Private Const InRange As String = "s.created_at >= @f AND s.created_at < @t"
+    Private Const GivenUp As String = "(s.discount_amount + s.special_discount_amount + s.points_value)"
+    Private Const ReasonSql As String = "CONCAT_WS(' + ', IF(s.discount_amount > 0, COALESCE(s.discount_name, 'Discount'), NULL), " &
+                                        "IF(s.special_discount_amount > 0, 'Special price', NULL), IF(s.points_value > 0, 'Points', NULL))"
+
+    Private Function Prm(r As DateRange) As Dictionary(Of String, Object)
+        Return Db.Params("@f", r.From, "@t", r.ToExclusive)
+    End Function
+
+    Private Function Dec(o As Object) As Decimal
+        If o Is Nothing OrElse o Is DBNull.Value Then Return 0D
+        Return Convert.ToDecimal(o)
+    End Function
+
+    Private Function Txt(o As Object) As String
+        If o Is Nothing OrElse o Is DBNull.Value Then Return ""
+        Return Convert.ToString(o, Inv)
+    End Function
+
+    Private Function Pct(part As Decimal, whole As Decimal) As Decimal
+        If whole = 0D Then Return 0D
+        Return Math.Round(part / whole * 100D, 1)
+    End Function
+
+    Private Function NewDoc(title As String, r As DateRange) As ReportDoc
+        Dim d As New ReportDoc()
+        d.ShopName = PosRepository.ShopSetting("shop_name", "DARWIN TRADING")
+        d.Title = title
+        d.PeriodLabel = r.Label
+        d.GeneratedBy = AppSession.FullName
+        d.GeneratedAt = DateTime.Now
+        Return d
+    End Function
+
+    ''' <summary>The six status figures shared by the Summary, Sales and Cashiers views, plus a one-line note.</summary>
+    Private Sub AddKpis(doc As ReportDoc, p As ReportPeriod, r As DateRange)
+        Dim q As Dictionary(Of String, Object) = Prm(r)
+        Dim t As DataTable = Db.Table("SELECT COUNT(*) AS n, COALESCE(SUM(s.subtotal), 0) AS full_price, COALESCE(SUM(s.discount_amount), 0) AS disc, " &
+                                      "COALESCE(SUM(s.special_discount_amount), 0) AS spec, COALESCE(SUM(s.points_value), 0) AS pts, " &
+                                      "COALESCE(SUM(CASE WHEN " & AnyConcession & " THEN 1 ELSE 0 END), 0) AS affected " &
+                                      "FROM sales s WHERE " & InRange, q)
+        Dim below As DataTable = Db.Table("SELECT COUNT(*) AS n, COALESCE(SUM(x.cost - x.collected), 0) AS loss FROM " &
+                                          "(SELECT (s.total - s.points_value) AS collected, " &
+                                          "(SELECT COALESCE(SUM(si.qty * si.cost_price), 0) FROM sale_items si WHERE si.sale_id = s.id) AS cost " &
+                                          "FROM sales s WHERE " & InRange & ") x WHERE x.collected < x.cost", q)
+        Dim n As Decimal = Dec(t.Rows(0)("n"))
+        Dim fullPrice As Decimal = Dec(t.Rows(0)("full_price"))
+        Dim disc As Decimal = Dec(t.Rows(0)("disc"))
+        Dim spec As Decimal = Dec(t.Rows(0)("spec"))
+        Dim pts As Decimal = Dec(t.Rows(0)("pts"))
+        Dim given As Decimal = disc + spec + pts
+        Dim belowN As Decimal = Dec(below.Rows(0)("n"))
+        Dim belowLoss As Decimal = Dec(below.Rows(0)("loss"))
+
+        doc.Kpis.Add(New ReportKpi("Total given up", ReportFormat.Peso(given)))
+        doc.Kpis.Add(New ReportKpi("Discounts", ReportFormat.Peso(disc)))
+        doc.Kpis.Add(New ReportKpi("Special prices", ReportFormat.Peso(spec)))
+        doc.Kpis.Add(New ReportKpi("Points redeemed", ReportFormat.Peso(pts)))
+        doc.Kpis.Add(New ReportKpi("Sales with a concession", ReportFormat.Whole(Dec(t.Rows(0)("affected"))) & " of " & ReportFormat.Whole(n)))
+        doc.Kpis.Add(New ReportKpi("Sold below cost (" & ReportFormat.Whole(belowN) & ")", ReportFormat.Peso(belowLoss), belowN > 0D))
+
+        Dim prevRange As DateRange = ReportPeriods.RangeFor(p, ReportPeriods.Shift(p, r.From, -1))
+        Dim prev As Decimal = Dec(Db.Scalar("SELECT COALESCE(SUM" & GivenUp & ", 0) FROM sales s WHERE " & InRange, Prm(prevRange)))
+        Dim note As String = ""
+        If fullPrice > 0D Then note = Pct(given, fullPrice).ToString("0.0", Inv) & "% of full-price sales was given up."
+        Dim cmp As String = ""
+        If given = 0D AndAlso prev = 0D Then
+            cmp = ""
+        ElseIf prev = 0D Then
+            cmp = "Nothing was given up " & ReportPeriods.PreviousName(p) & "."
+        Else
+            Dim ch As Decimal = Math.Round((given - prev) / prev * 100D, 0)
+            If ch = 0D Then
+                cmp = "Same as " & ReportPeriods.PreviousName(p) & "."
+            Else
+                cmp = "That is " & If(ch > 0D, "up ", "down ") & Math.Abs(ch).ToString("0", Inv) & "% compared with " & ReportPeriods.PreviousName(p) & "."
+            End If
+        End If
+        doc.Note = (note & " " & cmp).Trim()
+    End Sub
+
+    Private Function TypeChart(title As String, t As DataTable, labelCol As String, valueCol As String) As ReportChart
+        Dim ch As New ReportChart()
+        ch.Title = title
+        ch.Horizontal = True
+        ch.IsMoney = True
+        Dim s As New ChartSeries(title, Theme.Maroon)
+        Dim count As Integer = 0
+        For Each row As DataRow In t.Rows
+            If count >= 10 Then Exit For
+            ch.Labels.Add(Txt(row(labelCol)))
+            s.Values.Add(Dec(row(valueCol)))
+            count += 1
+        Next
+        ch.Series.Add(s)
+        Return ch
+    End Function
+
+    ' ------------------------------------------------------------------ Summary
+    Public Function Summary(p As ReportPeriod, r As DateRange) As ReportDoc
+        Dim doc As ReportDoc = NewDoc("Loss Report", r)
+        Dim q As Dictionary(Of String, Object) = Prm(r)
+        AddKpis(doc, p, r)
+
+        ' given up per hour / day, by kind
+        Dim expr As String = If(p = ReportPeriod.Daily, "HOUR(s.created_at)", "DATE_FORMAT(s.created_at, '%Y-%m-%d')")
+        Dim tr As DataTable = Db.Table("SELECT " & expr & " AS k, SUM(s.discount_amount) AS d, SUM(s.special_discount_amount) AS sp, SUM(s.points_value) AS pv " &
+                                       "FROM sales s WHERE " & InRange & " AND " & AnyConcession & " GROUP BY 1", q)
+        Dim ld As New Dictionary(Of String, Decimal)()
+        Dim ls As New Dictionary(Of String, Decimal)()
+        Dim lp As New Dictionary(Of String, Decimal)()
+        Dim keys As New List(Of String)()
+        For Each row As DataRow In tr.Rows
+            Dim k As String = Txt(row("k"))
+            keys.Add(k)
+            ld(k) = Dec(row("d"))
+            ls(k) = Dec(row("sp"))
+            lp(k) = Dec(row("pv"))
+        Next
+        Dim labels As New List(Of String)()
+        Dim bucketKeys As New List(Of String)()
+        If p = ReportPeriod.Daily Then
+            Dim lo As Integer = 8
+            Dim hi As Integer = 18
+            For Each k As String In keys
+                Dim h As Integer
+                If Integer.TryParse(k, h) Then
+                    If h < lo Then lo = h
+                    If h > hi Then hi = h
+                End If
+            Next
+            For h As Integer = lo To hi
+                bucketKeys.Add(h.ToString(Inv))
+                Dim h12 As Integer = h Mod 12
+                If h12 = 0 Then h12 = 12
+                labels.Add(h12.ToString(Inv) & If(h < 12, "a", "p"))
+            Next
+        Else
+            Dim d As DateTime = r.From
+            While d < r.ToExclusive
+                bucketKeys.Add(d.ToString("yyyy-MM-dd", Inv))
+                labels.Add(If(p = ReportPeriod.Weekly, d.ToString("ddd d", Inv), d.Day.ToString(Inv)))
+                d = d.AddDays(1)
+            End While
+        End If
+        Dim trend As New ReportChart()
+        trend.Title = If(p = ReportPeriod.Daily, "Given up per hour", "Given up per day")
+        trend.IsMoney = True
+        Dim sd As New ChartSeries("Discounts", Theme.Maroon)
+        Dim ss As New ChartSeries("Special prices", PaleBar)
+        Dim sp As New ChartSeries("Points", GreyBar)
+        For i As Integer = 0 To bucketKeys.Count - 1
+            trend.Labels.Add(labels(i))
+            Dim a As Decimal = 0D
+            Dim b As Decimal = 0D
+            Dim c As Decimal = 0D
+            ld.TryGetValue(bucketKeys(i), a)
+            ls.TryGetValue(bucketKeys(i), b)
+            lp.TryGetValue(bucketKeys(i), c)
+            sd.Values.Add(a)
+            ss.Values.Add(b)
+            sp.Values.Add(c)
+        Next
+        trend.Series.Add(sd)
+        trend.Series.Add(ss)
+        trend.Series.Add(sp)
+        doc.Charts.Add(trend)
+
+        ' breakdown: every named discount, special prices, points
+        Dim dt As New DataTable()
+        dt.Columns.Add("type", GetType(String))
+        dt.Columns.Add("kind", GetType(String))
+        dt.Columns.Add("times", GetType(Integer))
+        dt.Columns.Add("amount", GetType(Decimal))
+        dt.Columns.Add("share", GetType(Decimal))
+
+        Dim byDisc As DataTable = Db.Table("SELECT COALESCE(s.discount_name, 'Discount') AS name, COUNT(*) AS n, SUM(s.discount_amount) AS amt " &
+                                           "FROM sales s WHERE " & InRange & " AND s.discount_amount > 0 GROUP BY s.discount_name", q)
+        For Each row As DataRow In byDisc.Rows
+            dt.Rows.Add(Txt(row("name")), "Discount", Convert.ToInt32(row("n")), Dec(row("amt")), 0D)
+        Next
+        Dim sk As DataTable = Db.Table("SELECT COUNT(*) AS n, COALESCE(SUM(s.special_discount_amount), 0) AS amt FROM sales s WHERE " & InRange & " AND s.special_discount_amount > 0", q)
+        If Convert.ToInt32(sk.Rows(0)("n")) > 0 Then dt.Rows.Add("Special price (admin approved)", "Special price", Convert.ToInt32(sk.Rows(0)("n")), Dec(sk.Rows(0)("amt")), 0D)
+        Dim pk As DataTable = Db.Table("SELECT COUNT(*) AS n, COALESCE(SUM(s.points_value), 0) AS amt, COALESCE(SUM(s.points_used), 0) AS used FROM sales s WHERE " & InRange & " AND s.points_value > 0", q)
+        If Convert.ToInt32(pk.Rows(0)("n")) > 0 Then dt.Rows.Add("Points redeemed (" & ReportFormat.Whole(Dec(pk.Rows(0)("used"))) & " pts)", "Points", Convert.ToInt32(pk.Rows(0)("n")), Dec(pk.Rows(0)("amt")), 0D)
+
+        Dim total As Decimal = 0D
+        For Each row As DataRow In dt.Rows
+            total += Dec(row("amount"))
+        Next
+        For Each row As DataRow In dt.Rows
+            row("share") = Pct(Dec(row("amount")), total)
+        Next
+        dt.DefaultView.Sort = "amount DESC"
+        Dim sorted As DataTable = dt.DefaultView.ToTable()
+
+        doc.Charts.Add(TypeChart("Given up by type", sorted, "type", "amount"))
+        doc.TableTitle = "Where it came from"
+        doc.Columns.Add(New ReportColumn("TYPE", "type", ColKind.Text, 32, 200))
+        doc.Columns.Add(New ReportColumn("KIND", "kind", ColKind.Text, 14, 110))
+        doc.Columns.Add(New ReportColumn("TIMES USED", "times", ColKind.Number, 12, 100))
+        doc.Columns.Add(New ReportColumn("AMOUNT GIVEN UP", "amount", ColKind.Money, 18, 140))
+        doc.Columns.Add(New ReportColumn("SHARE", "share", ColKind.Percent, 12, 90))
+        doc.Data = sorted
+        doc.EmptyText = "No discount, special price or points were used in this period."
+        Return doc
+    End Function
+
+    ' ------------------------------------------------------------------ Sales (one row per sale that gave something up)
+    Public Function SalesList(p As ReportPeriod, r As DateRange) As ReportDoc
+        Dim doc As ReportDoc = NewDoc("Loss Report - Sales", r)
+        AddKpis(doc, p, r)
+
+        Dim dt As DataTable = Db.Table("SELECT s.id, s.receipt_no, s.created_at, COALESCE(s.cashier_name, '') AS cashier, COALESCE(s.customer_name, '') AS customer, " &
+                                       ReasonSql & " AS reason, COALESCE(s.special_approved_name, '') AS approver, " &
+                                       "s.subtotal AS full_price, " & GivenUp & " AS given_up, s.total " &
+                                       "FROM sales s WHERE " & InRange & " AND " & AnyConcession &
+                                       " ORDER BY s.created_at DESC, s.id DESC LIMIT " & (MaxRows + 1), Prm(r))
+        If dt.Rows.Count > MaxRows Then
+            dt.Rows.RemoveAt(dt.Rows.Count - 1)
+            doc.TruncatedNote = "Showing the latest " & MaxRows.ToString("N0", Inv) & " sales of this period. Choose a shorter period to see the rest."
+        End If
+
+        doc.ScreenHint = "Select a sale, then choose View receipt (or double-click it)."
+        doc.TableTitle = "Sales that gave something up"
+        doc.Columns.Add(New ReportColumn("RECEIPT NO", "receipt_no", ColKind.Text, 13, 120))
+        doc.Columns.Add(New ReportColumn("DATE & TIME", "created_at", ColKind.Stamp, 16, 170))
+        doc.Columns.Add(New ReportColumn("CASHIER", "cashier", ColKind.Text, 12, 110))
+        doc.Columns.Add(New ReportColumn("CUSTOMER", "customer", ColKind.Text, 13, 120))
+        doc.Columns.Add(New ReportColumn("REASON", "reason", ColKind.Text, 16, 150))
+        doc.Columns.Add(New ReportColumn("APPROVED BY", "approver", ColKind.Text, 12, 110))
+        doc.Columns.Add(New ReportColumn("FULL PRICE", "full_price", ColKind.Money, 11, 110))
+        doc.Columns.Add(New ReportColumn("GIVEN UP", "given_up", ColKind.Money, 11, 110))
+        doc.Columns.Add(New ReportColumn("SALE TOTAL", "total", ColKind.Money, 11, 110))
+        doc.Data = dt
+        doc.EmptyText = "No discount, special price or points were used in this period."
+        Return doc
+    End Function
+
+    ' ------------------------------------------------------------------ Cashiers (who gives what away)
+    Public Function Cashiers(p As ReportPeriod, r As DateRange) As ReportDoc
+        Dim doc As ReportDoc = NewDoc("Loss Report - Cashiers", r)
+        Dim q As Dictionary(Of String, Object) = Prm(r)
+        AddKpis(doc, p, r)
+
+        Dim dt As DataTable = Db.Table("SELECT COALESCE(s.cashier_name, '(unknown)') AS cashier, COUNT(*) AS sales_count, " &
+                                       "COALESCE(SUM(CASE WHEN " & AnyConcession & " THEN 1 ELSE 0 END), 0) AS with_concession, " &
+                                       "COALESCE(SUM(s.discount_amount), 0) AS disc, COALESCE(SUM(s.special_discount_amount), 0) AS spec, " &
+                                       "COALESCE(SUM(s.points_value), 0) AS pts, COALESCE(SUM(s.subtotal), 0) AS full_price, " &
+                                       "COALESCE(SUM" & GivenUp & ", 0) AS given_up " &
+                                       "FROM sales s WHERE " & InRange & " GROUP BY s.cashier_id, s.cashier_name ORDER BY given_up DESC", q)
+        dt.Columns.Add("rate", GetType(Decimal))
+        For Each row As DataRow In dt.Rows
+            row("rate") = Pct(Dec(row("given_up")), Dec(row("full_price")))
+        Next
+
+        doc.Charts.Add(TypeChart("Given up by cashier", dt, "cashier", "given_up"))
+
+        Dim ap As DataTable = Db.Table("SELECT COALESCE(s.special_approved_name, '(unknown)') AS approver, SUM(s.special_discount_amount) AS amt " &
+                                       "FROM sales s WHERE " & InRange & " AND s.special_discount_amount > 0 " &
+                                       "GROUP BY s.special_approved_by, s.special_approved_name ORDER BY amt DESC", q)
+        If ap.Rows.Count > 0 Then doc.Charts.Add(TypeChart("Special prices approved by", ap, "approver", "amt"))
+
+        doc.TableTitle = "Given up by cashier"
+        doc.Columns.Add(New ReportColumn("CASHIER", "cashier", ColKind.Text, 20, 140))
+        doc.Columns.Add(New ReportColumn("SALES", "sales_count", ColKind.Number, 8, 80))
+        doc.Columns.Add(New ReportColumn("WITH A CONCESSION", "with_concession", ColKind.Number, 12, 120))
+        doc.Columns.Add(New ReportColumn("DISCOUNTS", "disc", ColKind.Money, 11, 110))
+        doc.Columns.Add(New ReportColumn("SPECIAL PRICES", "spec", ColKind.Money, 12, 120))
+        doc.Columns.Add(New ReportColumn("POINTS", "pts", ColKind.Money, 10, 100))
+        doc.Columns.Add(New ReportColumn("TOTAL GIVEN UP", "given_up", ColKind.Money, 12, 120))
+        doc.Columns.Add(New ReportColumn("% OF FULL PRICE", "rate", ColKind.Percent, 11, 110))
+        doc.Data = dt
+        doc.EmptyText = "There were no sales in this period."
+        Return doc
+    End Function
+
+    ' ------------------------------------------------------------------ Below cost (the only real loss)
+    Public Function BelowCost(p As ReportPeriod, r As DateRange) As ReportDoc
+        Dim doc As ReportDoc = NewDoc("Loss Report - Below cost", r)
+
+        Dim dt As DataTable = Db.Table("SELECT x.id, x.receipt_no, x.created_at, x.cashier, x.approver, x.reason, x.cost, x.collected, (x.cost - x.collected) AS loss FROM " &
+                                       "(SELECT s.id, s.receipt_no, s.created_at, COALESCE(s.cashier_name, '') AS cashier, " &
+                                       "COALESCE(s.special_approved_name, '') AS approver, " & ReasonSql & " AS reason, " &
+                                       "(SELECT COALESCE(SUM(si.qty * si.cost_price), 0) FROM sale_items si WHERE si.sale_id = s.id) AS cost, " &
+                                       "(s.total - s.points_value) AS collected FROM sales s WHERE " & InRange & ") x " &
+                                       "WHERE x.collected < x.cost ORDER BY loss DESC LIMIT " & (MaxRows + 1), Prm(r))
+        If dt.Rows.Count > MaxRows Then
+            dt.Rows.RemoveAt(dt.Rows.Count - 1)
+            doc.TruncatedNote = "Showing the " & MaxRows.ToString("N0", Inv) & " biggest losses of this period."
+        End If
+
+        Dim totalLoss As Decimal = 0D
+        Dim biggest As Decimal = 0D
+        Dim costSum As Decimal = 0D
+        For Each row As DataRow In dt.Rows
+            Dim l As Decimal = Dec(row("loss"))
+            totalLoss += l
+            costSum += Dec(row("cost"))
+            If l > biggest Then biggest = l
+        Next
+        doc.Kpis.Add(New ReportKpi("Sales below cost", ReportFormat.Whole(dt.Rows.Count), dt.Rows.Count > 0))
+        doc.Kpis.Add(New ReportKpi("Total loss", ReportFormat.Peso(totalLoss), totalLoss > 0D))
+        doc.Kpis.Add(New ReportKpi("Biggest single loss", ReportFormat.Peso(biggest)))
+        doc.Kpis.Add(New ReportKpi("Cost of those items", ReportFormat.Peso(costSum)))
+        doc.Note = "Sales where the customer paid less than the items cost the shop."
+
+        doc.ScreenHint = "Select a sale, then choose View receipt (or double-click it)."
+        doc.TableTitle = "Sales made below cost"
+        doc.Columns.Add(New ReportColumn("RECEIPT NO", "receipt_no", ColKind.Text, 14, 120))
+        doc.Columns.Add(New ReportColumn("DATE & TIME", "created_at", ColKind.Stamp, 17, 170))
+        doc.Columns.Add(New ReportColumn("CASHIER", "cashier", ColKind.Text, 13, 110))
+        doc.Columns.Add(New ReportColumn("REASON", "reason", ColKind.Text, 16, 150))
+        doc.Columns.Add(New ReportColumn("APPROVED BY", "approver", ColKind.Text, 13, 110))
+        doc.Columns.Add(New ReportColumn("COST OF ITEMS", "cost", ColKind.Money, 12, 120))
+        doc.Columns.Add(New ReportColumn("PAID", "collected", ColKind.Money, 11, 110))
+        doc.Columns.Add(New ReportColumn("LOSS", "loss", ColKind.Money, 11, 110))
+        doc.Data = dt
+        doc.EmptyText = "No sale went below cost in this period."
+        Return doc
+    End Function
+
+End Module

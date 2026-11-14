@@ -279,6 +279,8 @@ Public Class MainMenuForm
                 Return New InventoryReportForm()
             Case "delivery_report"
                 Return New DeliveryReportForm()
+            Case "loss_report"
+                Return New LossReportForm()
             Case "stock_threshold"
                 Return New StockThresholdForm()
             Case "pos"

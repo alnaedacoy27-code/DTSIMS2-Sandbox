@@ -38,7 +38,7 @@ Public Module ModuleCatalog
         l.Add(New ModuleInfo("inventory_report", "Reports", "Inventory Report", "Stock in and stock out records"))
         l.Add(New ModuleInfo("delivery_report", "Reports", "Delivery Report", "Deliveries received from suppliers"))
         l.Add(New ModuleInfo("sales_report", "Reports", "Sales Report", "Sales, top products and receipt copies"))
-        l.Add(New ModuleInfo("loss_report", "Reports", "Loss Report", "Damaged, lost and stolen stock"))
+        l.Add(New ModuleInfo("loss_report", "Reports", "Loss Report", "Discounts, special prices and points given"))
 
         l.Add(New ModuleInfo("pos", "Transactions", "POS", "Point of sale: ring up customers", Keys.F2))
         l.Add(New ModuleInfo("customers", "Transactions", "Customer Accounts", "Loyalty cards and points"))

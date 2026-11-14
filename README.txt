@@ -83,3 +83,11 @@ EXPERIMENT 3b - report printing + date button
 EXPERIMENT 3c - fixes
  - Delivery Report > Deliveries: SQL alias "lines" is a reserved word in MySQL 8 -> renamed to item_count.
  - Sales Report: tab renamed "Receipts"; extra header button "Receipt copy" jumps to it; on-screen tip under the table.
+
+EXPERIMENT 4 - Loss Report (Reports > Loss Report, Admin / Superadmin only)
+ Meaning: money the shop gave up = percentage discounts + admin-approved special prices + points redeemed (peso value).
+ It is income not collected, not cash lost - except "Below cost", where customers paid less than the items cost.
+ Views: Summary (figures, per hour/day chart by kind, by type, "where it came from" table) | Sales (one row per sale that gave
+ something up, View receipt) | Cashiers (who gives what away + who approved special prices) | Below cost (the real loss).
+ Code: LossData module at the end of Modules/ReportData.vb, Forms/Reports/LossReportForm.vb.
+ Note: the POS never combines points with a discount or special price, so each sale gives up at most one kind.
